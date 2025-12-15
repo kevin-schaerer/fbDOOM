@@ -226,13 +226,23 @@ void I_FinishUpdate (void)
 			if (a == 1.0){
 				fbPos = location(fb_x, fb_y+1);
 				*((uint16_t *)(fbp + fbPos)) = pixel;
+				fbPos = location(fb_x, fb_y+2);
+				*((uint16_t *)(fbp + fbPos)) = pixel;
 			}
 			if (b == 1.0){
 				fbPos = location(fb_x+1, fb_y);
 				*((uint16_t *)(fbp + fbPos)) = pixel;
+				fbPos = location(fb_x+2, fb_y);
+				*((uint16_t *)(fbp + fbPos)) = pixel;
 			}
 			if (a== 1.0 && b == 1.0){
 				fbPos = location(fb_x+1, fb_y+1);
+				*((uint16_t *)(fbp + fbPos)) = pixel;
+				fbPos = location(fb_x+1, fb_y+2);
+				*((uint16_t *)(fbp + fbPos)) = pixel;
+				fbPos = location(fb_x+2, fb_y+1);
+				*((uint16_t *)(fbp + fbPos)) = pixel;
+				fbPos = location(fb_x+2, fb_y+2);
 				*((uint16_t *)(fbp + fbPos)) = pixel;
 			}
         }
