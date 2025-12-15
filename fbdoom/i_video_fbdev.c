@@ -230,8 +230,6 @@ void I_FinishUpdate (void)
 				*((uint16_t *)(fbp + fbPos)) = pixel;
 				fbPos = location(fb_x, fb_y+3);
 				*((uint16_t *)(fbp + fbPos)) = pixel;
-				fbPos = location(fb_x, fb_y+4);
-				*((uint16_t *)(fbp + fbPos)) = pixel;
 			}
 			if (b == 1.0){
 				fbPos = location(fb_x+1, fb_y);
@@ -239,8 +237,6 @@ void I_FinishUpdate (void)
 				fbPos = location(fb_x+2, fb_y);
 				*((uint16_t *)(fbp + fbPos)) = pixel;
 				fbPos = location(fb_x+3, fb_y);
-				*((uint16_t *)(fbp + fbPos)) = pixel;
-				fbPos = location(fb_x+4, fb_y);
 				*((uint16_t *)(fbp + fbPos)) = pixel;
 			}
 			if (a== 1.0 && b == 1.0){
@@ -254,19 +250,9 @@ void I_FinishUpdate (void)
 				*((uint16_t *)(fbp + fbPos)) = pixel;
 				fbPos = location(fb_x+1, fb_y+3);
 				*((uint16_t *)(fbp + fbPos)) = pixel;
-				fbPos = location(fb_x+1, fb_y+4);
-				*((uint16_t *)(fbp + fbPos)) = pixel;
 				fbPos = location(fb_x+2, fb_y+3);
 				*((uint16_t *)(fbp + fbPos)) = pixel;
-				fbPos = location(fb_x+2, fb_y+4);
-				*((uint16_t *)(fbp + fbPos)) = pixel;
 				fbPos = location(fb_x+3, fb_y+3);
-				*((uint16_t *)(fbp + fbPos)) = pixel;
-				fbPos = location(fb_x+3, fb_y+4);
-				*((uint16_t *)(fbp + fbPos)) = pixel;
-				fbPos = location(fb_x+4, fb_y+3);
-				*((uint16_t *)(fbp + fbPos)) = pixel;
-				fbPos = location(fb_x+4, fb_y+4);
 				*((uint16_t *)(fbp + fbPos)) = pixel;
 			}
         }
