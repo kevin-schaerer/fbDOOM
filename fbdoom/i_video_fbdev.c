@@ -50,8 +50,8 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 //#define CMAP256
 
-struct fb_var_screeninfo fb = {};
-int fb_scaling = 1;
+static struct fb_var_screeninfo fb;
+static struct fb_fix_screeninfo finfo;
 int usemouse = 0;
 
 struct color {
@@ -66,7 +66,7 @@ static struct color colors[256];
 // The screen buffer; this is modified to draw things to the screen
 
 byte *I_VideoBuffer = NULL;
-byte *I_VideoBuffer_FB = NULL;
+static char *fbp = 0;
 
 /* framebuffer file descriptor */
 int fd_fb = 0;
@@ -110,54 +110,6 @@ typedef struct
 
 static uint16_t rgb565_palette[256];
 
-void cmap_to_rgb565(uint16_t * out, uint8_t * in, int in_pixels)
-{
-    int i, j;
-    struct color c;
-    uint16_t r, g, b;
-
-    for (i = 0; i < in_pixels; i++)
-    {
-        c = colors[*in]; 
-        r = ((uint16_t)(c.r >> 3)) << 11;
-        g = ((uint16_t)(c.g >> 2)) << 5;
-        b = ((uint16_t)(c.b >> 3)) << 0;
-        *out = (r | g | b);
-
-        in++;
-        for (j = 0; j < fb_scaling; j++) {
-            out++;
-        }
-    }
-}
-
-void cmap_to_fb(uint8_t * out, uint8_t * in, int in_pixels)
-{
-    int i, j, k;
-    struct color c;
-    uint32_t pix;
-    uint16_t r, g, b;
-
-    for (i = 0; i < in_pixels; i++)
-    {
-        c = colors[*in];  /* R:8 G:8 B:8 format! */
-        r = (uint16_t)(c.r >> (8 - fb.red.length));
-        g = (uint16_t)(c.g >> (8 - fb.green.length));
-        b = (uint16_t)(c.b >> (8 - fb.blue.length));
-        pix = r << fb.red.offset;
-        pix |= g << fb.green.offset;
-        pix |= b << fb.blue.offset;
-
-        for (k = 0; k < fb_scaling; k++) {
-            for (j = 0; j < fb.bits_per_pixel/8; j++) {
-                *out = (pix >> (j*8));
-                out++;
-            }
-        }
-        in++;
-    }
-}
-
 void I_InitGraphics (void)
 {
     int i;
@@ -170,6 +122,11 @@ void I_InitGraphics (void)
         exit(-1);
     }
 
+	if (ioctl(fd_fb, FBIOGET_FSCREENINFO, &finfo)) {
+        printf("Error reading fixed information.\n");
+            exit(2);
+    }
+	
     /* fetch framebuffer info */
     ioctl(fd_fb, FBIOGET_VSCREENINFO, &fb);
     /* change params if needed */
@@ -182,23 +139,14 @@ void I_InitGraphics (void)
 
     printf("I_InitGraphics: DOOM screen size: w x h: %d x %d\n", SCREENWIDTH, SCREENHEIGHT);
 
-
-    i = M_CheckParmWithArgs("-scaling", 1);
-    if (i > 0) {
-        i = atoi(myargv[i + 1]);
-        fb_scaling = i;
-        printf("I_InitGraphics: Scaling factor: %d\n", fb_scaling);
-    } else {
-        fb_scaling = fb.xres / SCREENWIDTH;
-        if (fb.yres / SCREENHEIGHT < fb_scaling)
-            fb_scaling = fb.yres / SCREENHEIGHT;
-        printf("I_InitGraphics: Auto-scaling factor: %d\n", fb_scaling);
+	fbp = (char *)mmap(0, fb.xres * fb.yres * (fb.bits_per_pixel/8), PROT_READ | PROT_WRITE, MAP_SHARED,fd_fb, 0);
+    if ((int64_t)fbp == -1) {
+            printf("Error: failed to map framebuffer device to memory.\n");
+            exit(4);
     }
-
 
     /* Allocate screen to draw to */
 	I_VideoBuffer = (byte*)Z_Malloc (SCREENWIDTH * SCREENHEIGHT, PU_STATIC, NULL);  // For DOOM to draw on
-	I_VideoBuffer_FB = (byte*)malloc(fb.xres * fb.yres * (fb.bits_per_pixel/8));     // For a single write() syscall to fbdev
 
 	screenvisible = true;
 
@@ -209,7 +157,7 @@ void I_InitGraphics (void)
 void I_ShutdownGraphics (void)
 {
 	Z_Free (I_VideoBuffer);
-	free(I_VideoBuffer_FB);
+	munmap(fbp, screensize);
 }
 
 void I_StartFrame (void)
@@ -219,172 +167,7 @@ void I_StartFrame (void)
 
 __attribute__ ((weak)) void I_GetEvent (void)
 {
-//	event_t event;
-//	bool button_state;
-//
-//	button_state = button_read ();
-//
-//	if (last_button_state != button_state)
-//	{
-//		last_button_state = button_state;
-//
-//		event.type = last_button_state ? ev_keydown : ev_keyup;
-//		event.data1 = KEY_FIRE;
-//		event.data2 = -1;
-//		event.data3 = -1;
-//
-//		D_PostEvent (&event);
-//	}
-//
-//	touch_main ();
-//
-//	if ((touch_state.x != last_touch_state.x) || (touch_state.y != last_touch_state.y) || (touch_state.status != last_touch_state.status))
-//	{
-//		last_touch_state = touch_state;
-//
-//		event.type = (touch_state.status == TOUCH_PRESSED) ? ev_keydown : ev_keyup;
-//		event.data1 = -1;
-//		event.data2 = -1;
-//		event.data3 = -1;
-//
-//		if ((touch_state.x > 49)
-//		 && (touch_state.x < 72)
-//		 && (touch_state.y > 104)
-//		 && (touch_state.y < 143))
-//		{
-//			// select weapon
-//			if (touch_state.x < 60)
-//			{
-//				// lower row (5-7)
-//				if (touch_state.y < 119)
-//				{
-//					event.data1 = '5';
-//				}
-//				else if (touch_state.y < 131)
-//				{
-//					event.data1 = '6';
-//				}
-//				else
-//				{
-//					event.data1 = '1';
-//				}
-//			}
-//			else
-//			{
-//				// upper row (2-4)
-//				if (touch_state.y < 119)
-//				{
-//					event.data1 = '2';
-//				}
-//				else if (touch_state.y < 131)
-//				{
-//					event.data1 = '3';
-//				}
-//				else
-//				{
-//					event.data1 = '4';
-//				}
-//			}
-//		}
-//		else if (touch_state.x < 40)
-//		{
-//			// button bar at bottom screen
-//			if (touch_state.y < 40)
-//			{
-//				// enter
-//				event.data1 = KEY_ENTER;
-//			}
-//			else if (touch_state.y < 80)
-//			{
-//				// escape
-//				event.data1 = KEY_ESCAPE;
-//			}
-//			else if (touch_state.y < 120)
-//			{
-//				// use
-//				event.data1 = KEY_USE;
-//			}
-//			else if (touch_state.y < 160)
-//			{
-//				// map
-//				event.data1 = KEY_TAB;
-//			}
-//			else if (touch_state.y < 200)
-//			{
-//				// pause
-//				event.data1 = KEY_PAUSE;
-//			}
-//			else if (touch_state.y < 240)
-//			{
-//				// toggle run
-//				if (touch_state.status == TOUCH_PRESSED)
-//				{
-//					run = !run;
-//
-//					event.data1 = KEY_RSHIFT;
-//
-//					if (run)
-//					{
-//						event.type = ev_keydown;
-//					}
-//					else
-//					{
-//						event.type = ev_keyup;
-//					}
-//				}
-//				else
-//				{
-//					return;
-//				}
-//			}
-//			else if (touch_state.y < 280)
-//			{
-//				// save
-//				event.data1 = KEY_F2;
-//			}
-//			else if (touch_state.y < 320)
-//			{
-//				// load
-//				event.data1 = KEY_F3;
-//			}
-//		}
-//		else
-//		{
-//			// movement/menu navigation
-//			if (touch_state.x < 100)
-//			{
-//				if (touch_state.y < 100)
-//				{
-//					event.data1 = KEY_STRAFE_L;
-//				}
-//				else if (touch_state.y < 220)
-//				{
-//					event.data1 = KEY_DOWNARROW;
-//				}
-//				else
-//				{
-//					event.data1 = KEY_STRAFE_R;
-//				}
-//			}
-//			else if (touch_state.x < 180)
-//			{
-//				if (touch_state.y < 160)
-//				{
-//					event.data1 = KEY_LEFTARROW;
-//				}
-//				else
-//				{
-//					event.data1 = KEY_RIGHTARROW;
-//				}
-//			}
-//			else
-//			{
-//				event.data1 = KEY_UPARROW;
-//			}
-//		}
-//
-//		D_PostEvent (&event);
-//	}
+
 }
 
 __attribute__ ((weak)) void I_StartTic (void)
@@ -396,54 +179,43 @@ void I_UpdateNoBlit (void)
 {
 }
 
+int location(int x, int y)
+{
+    return (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (y+vinfo.yoffset) * finfo.line_length;
+}
+
+uint16_t colorTo16bit(struct Color col)
+{
+    return  (col.r >> 3) << 11 | (col.g >> 2) << 5 | (col.b >> 3);
+}
+
 //
 // I_FinishUpdate
 //
 
 void I_FinishUpdate (void)
 {
-    int y;
-    int x_offset, y_offset, x_offset_end;
-    unsigned char *line_in, *line_out;
+	float y_scale = (float)fb.yres / SCREENHEIGHT;
+    float x_scale = (float)fb.xres / SCREENWIDTH;
+    float scale = (y_scale < x_scale) ? y_scale : x_scale;
+    int x_offset = (int)((fb.yres - SCREENHEIGHT * scale) / 2);
+    int y_offset = (int)((fb.xres - SCREENWIDTH * scale) / 2);
 
-    /* Offsets in case FB is bigger than DOOM */
-    /* 600 = fb heigt, 200 screenheight */
-    /* 600 = fb heigt, 200 screenheight */
-    /* 2048 =fb width, 320 screenwidth */
-    y_offset     = (((fb.yres - (SCREENHEIGHT * fb_scaling)) * fb.bits_per_pixel/8)) / 2;
-    x_offset     = (((fb.xres - (SCREENWIDTH  * fb_scaling)) * fb.bits_per_pixel/8)) / 2; // XXX: siglent FB hack: /4 instead of /2, since it seems to handle the resolution in a funny way
-    //x_offset     = 0;
-    x_offset_end = ((fb.xres - (SCREENWIDTH  * fb_scaling)) * fb.bits_per_pixel/8) - x_offset;
-
-    /* DRAW SCREEN */
-    line_in  = (unsigned char *) I_VideoBuffer;
-    line_out = (unsigned char *) I_VideoBuffer_FB;
-
-    y = SCREENHEIGHT;
-
-    while (y--)
+    for (int gy = 0; gy < SCREENHEIGHT; gy++)
     {
-        int i;
-        for (i = 0; i < fb_scaling; i++) {
-            line_out += x_offset;
-#ifdef CMAP256
-            for (fb_scaling == 1) {
-                memcpy(line_out, line_in, SCREENWIDTH); /* fb_width is bigger than Doom SCREENWIDTH... */
-            } else {
-                //XXX FIXME fb_scaling support!
-            }
-#else
-            //cmap_to_rgb565((void*)line_out, (void*)line_in, SCREENWIDTH);
-            cmap_to_fb((void*)line_out, (void*)line_in, SCREENWIDTH);
-#endif
-            line_out += (SCREENWIDTH * fb_scaling * (fb.bits_per_pixel/8)) + x_offset_end;
-        }
-        line_in += SCREENWIDTH;
-    }
+        for (int gx = 0; gx < SCREENWIDTH; gx++)
+        {
+            int fb_y = (int)(gy * scale + y_offset);
+            int fb_x = (int)((int)(SCREENWIDTH - 1 - gx) * scale + x_offset);
+            if (fb_y < 0 || fb_y >= fb.yres || fb_x < 0 || fb_x >= fb.xres)
+                continue;
 
-    /* Start drawing from y-offset */
-    lseek(fd_fb, y_offset * fb.xres, SEEK_SET);
-    write(fd_fb, I_VideoBuffer_FB, (SCREENHEIGHT * fb_scaling * (fb.bits_per_pixel/8)) * fb.xres); /* draw only portion used by doom + x-offsets */
+            int fbPos = location(fb_x, fb_y);
+            uint8_t color_idx = *(I_VideoBuffer + gy * SCREENWIDTH + gx);
+            uint16_t pixel = colorTo16bit(colors[color_idx]);
+            *((uint16_t *)(fbp + fbPos)) = pixel;
+        }
+    }
 }
 
 //
