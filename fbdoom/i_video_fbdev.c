@@ -200,19 +200,25 @@ void I_FinishUpdate (void)
 	float y_scale = (float)fb.yres / SCREENHEIGHT;
     float x_scale = (float)fb.xres / SCREENWIDTH;
     float scale = (y_scale < x_scale) ? y_scale : x_scale;
-    int y_offset = (int)((fb.yres - SCREENHEIGHT * scale) / 2);
-    int x_offset = (int)((fb.xres - SCREENWIDTH * scale) / 2);
+    float y_offset = (((float)fb.yres - SCREENHEIGHT * scale) / 2.0);
+    float x_offset = (((float)fb.xres - SCREENWIDTH * scale) / 2.0);
 
     for (int gy = 0; gy < SCREENHEIGHT; gy++)
     {
         for (int gx = 0; gx < SCREENWIDTH; gx++)
         {
-            int fb_y = (int)(gy * scale + y_offset);
-            int fb_x = (int)(gx * scale + x_offset);
-            if (fb_y < 0 || fb_y >= fb.yres || fb_x < 0 || fb_x >= fb.xres)
+            int fb_y = (int)((float)gy * scale + y_offset);
+            int fb_x = (int)((float)gx * scale + x_offset);
+			int b = (int)fb_x;
+			int a = (int)fb_y;
+			if (fb_y - (float)a >= 0.5)
+				a += 1;
+			if (fb_x - (float)b >= 0.5)
+				b += 1;
+            if (a < 0 || a >= fb.yres || b < 0 || b >= fb.xres)
                 continue;
 
-            int fbPos = location(fb_x, fb_y);
+            int fbPos = location(b, a);
             uint8_t color_idx = *(I_VideoBuffer + gy * SCREENWIDTH + gx);
             uint16_t pixel = colorTo16bit(colors[color_idx]);
             *((uint16_t *)(fbp + fbPos)) = pixel;
