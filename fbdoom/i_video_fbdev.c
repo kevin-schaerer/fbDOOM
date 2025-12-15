@@ -186,7 +186,7 @@ int location(int x, int y)
     return (x+fb.xoffset) * (fb.bits_per_pixel/8) + (y+fb.yoffset) * finfo.line_length;
 }
 
-uint16_t colorTo16bit(col_t col)
+uint16_t colorTo16bit(struct color col)
 {
     return  (col.r >> 3) << 11 | (col.g >> 2) << 5 | (col.b >> 3);
 }
