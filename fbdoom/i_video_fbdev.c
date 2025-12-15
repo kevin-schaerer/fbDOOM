@@ -141,7 +141,7 @@ void I_InitGraphics (void)
 
     printf("I_InitGraphics: DOOM screen size: w x h: %d x %d\n", SCREENWIDTH, SCREENHEIGHT);
 
-	fbp = (char *)mmap(0, fb.xres * fb.yres * (fb.bits_per_pixel/8), PROT_READ | PROT_WRITE, MAP_SHARED,fd_fb, 0);
+	fbp = (char *)mmap(0, fb.xres * fb.yres * (fb.bits_per_pixel/8)*2, PROT_READ | PROT_WRITE, MAP_SHARED,fd_fb, 0);
     if ((int64_t)fbp == -1) {
             printf("Error: failed to map framebuffer device to memory.\n");
             exit(4);
@@ -159,7 +159,7 @@ void I_InitGraphics (void)
 void I_ShutdownGraphics (void)
 {
 	Z_Free (I_VideoBuffer);
-	munmap(fbp, fb.xres * fb.yres * (fb.bits_per_pixel/8));
+	munmap(fbp, fb.xres * fb.yres * (fb.bits_per_pixel/8)*2);
 }
 
 void I_StartFrame (void)
@@ -209,12 +209,6 @@ void I_FinishUpdate (void)
         {
             int fb_y = (int)((float)gy * scale + y_offset);
             int fb_x = (int)((float)gx * scale + x_offset);
-			int b = (int)fb_x;
-			int a = (int)fb_y;
-			if ((float)fb_y - (float)a >= 0.5)
-				a = 1.0;
-			if ((float)fb_x - (float)b >= 0.5)
-				b = 1.0;
             if (fb_y < 0 || fb_y >= fb.yres || fb_x < 0 || fb_x >= fb.xres)
                 continue;
 
