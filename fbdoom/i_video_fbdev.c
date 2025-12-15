@@ -159,7 +159,7 @@ void I_InitGraphics (void)
 void I_ShutdownGraphics (void)
 {
 	Z_Free (I_VideoBuffer);
-	munmap(fbp, screensize);
+	munmap(fbp, fb.xres * fb.yres * (fb.bits_per_pixel/8));
 }
 
 void I_StartFrame (void)
@@ -183,7 +183,7 @@ void I_UpdateNoBlit (void)
 
 int location(int x, int y)
 {
-    return (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + (y+vinfo.yoffset) * finfo.line_length;
+    return (x+fb.xoffset) * (fb.bits_per_pixel/8) + (y+fb.yoffset) * finfo.line_length;
 }
 
 uint16_t colorTo16bit(struct Color col)
