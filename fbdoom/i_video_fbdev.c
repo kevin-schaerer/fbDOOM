@@ -211,9 +211,9 @@ void I_FinishUpdate (void)
             int fb_x = (int)((float)gx * scale + x_offset);
 			int b = (int)fb_x;
 			int a = (int)fb_y;
-			if (fb_y - (float)a >= 0.5)
+			if ((float)fb_y - (float)a >= 0.5)
 				a = 1.0;
-			if (fb_x - (float)b >= 0.5)
+			if ((float)fb_x - (float)b >= 0.5)
 				b = 1.0;
             if (fb_y < 0 || fb_y >= fb.yres || fb_x < 0 || fb_x >= fb.xres)
                 continue;
