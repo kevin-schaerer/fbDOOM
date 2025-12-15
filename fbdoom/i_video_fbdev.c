@@ -212,16 +212,26 @@ void I_FinishUpdate (void)
 			int b = (int)fb_x;
 			int a = (int)fb_y;
 			if (fb_y - (float)a >= 0.5)
-				a += 1;
+				a = 1.0;
 			if (fb_x - (float)b >= 0.5)
-				b += 1;
-            if (a < 0 || a >= fb.yres || b < 0 || b >= fb.xres)
+				b = 1.0;
+            if (fb_y < 0 || fb_y >= fb.yres || fb_x < 0 || fb_x >= fb.xres)
                 continue;
 
-            int fbPos = location(b, a);
+            int fbPos = location(fb_x, fb_y);
             uint8_t color_idx = *(I_VideoBuffer + gy * SCREENWIDTH + gx);
             uint16_t pixel = colorTo16bit(colors[color_idx]);
             *((uint16_t *)(fbp + fbPos)) = pixel;
+
+			if (a == 1.0)
+				fbPos = location(fb_x, fb_y+1);
+				*((uint16_t *)(fbp + fbPos)) = pixel;
+			if (b == 1.0)
+				fbPos = location(fb_x+1, fb_y);
+				*((uint16_t *)(fbp + fbPos)) = pixel;
+			if (a== 1.0 && b == 1.0)
+				fbPos = location(fb_x+1, fb_y+1);
+				*((uint16_t *)(fbp + fbPos)) = pixel;
         }
     }
 }
