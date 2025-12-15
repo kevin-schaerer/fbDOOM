@@ -231,8 +231,6 @@ void I_FinishUpdate (void)
 			*((uint16_t *)(fbp + fbPos)) = pixel;
 			fbPos = location(fb_x+2, fb_y+1);
 			*((uint16_t *)(fbp + fbPos)) = pixel;
-			fbPos = location(fb_x+2, fb_y+2);
-			*((uint16_t *)(fbp + fbPos)) = pixel;
         }
     }
 }
