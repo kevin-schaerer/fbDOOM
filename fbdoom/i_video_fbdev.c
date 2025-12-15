@@ -201,14 +201,14 @@ void I_FinishUpdate (void)
     float x_scale = (float)fb.xres / SCREENWIDTH;
     float scale = (y_scale < x_scale) ? y_scale : x_scale;
     int y_offset = (int)((fb.yres - SCREENHEIGHT * scale) / 2);
-    int x_offset = 800 - (int)((fb.xres - SCREENWIDTH * scale) / 2);
+    int x_offset = (int)((fb.xres - SCREENWIDTH * scale) / 2);
 
     for (int gy = 0; gy < SCREENHEIGHT; gy++)
     {
         for (int gx = 0; gx < SCREENWIDTH; gx++)
         {
             int fb_y = (int)(gy * scale + y_offset);
-            int fb_x = (int)((int)(SCREENWIDTH - 1 - gx) * scale + x_offset);
+            int fb_x = (int)(gx * scale + x_offset);
             if (fb_y < 0 || fb_y >= fb.yres || fb_x < 0 || fb_x >= fb.xres)
                 continue;
 
